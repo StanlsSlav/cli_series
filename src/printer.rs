@@ -21,7 +21,9 @@ pub(crate) fn print_series_table(
 
     let series = series.iter();
     for (i, serie) in series.enumerate() {
-        print_row(serie, i == selected_idx.unwrap_or(0))?;
+        let is_selected = i == selected_idx.unwrap_or(0);
+
+        print_row(serie, is_selected)?;
         println!();
     }
 

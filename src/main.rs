@@ -1,7 +1,7 @@
 mod db;
+mod printer;
 mod series;
 mod term;
-mod printer;
 
 use std::{error::Error, io::stdout, time::Duration};
 
@@ -106,12 +106,15 @@ fn handle_keyboard_input(
             'q' => {
                 app.should_exit = true;
             }
+
             'r' | 'u' => app.data.ignore_cached_series = true,
+
             'k' => {
                 if let Some(idx) = app.data.hovered_serie_idx {
                     app.data.hovered_serie_idx = Some(idx.saturating_sub(1).max(0));
                 }
             }
+
             'j' => {
                 let max_series = app.data.available_series.len() - 1;
 
@@ -119,9 +122,11 @@ fn handle_keyboard_input(
                     app.data.hovered_serie_idx = Some(idx.saturating_add(1).min(max_series));
                 }
             }
+
             'G' => {
                 app.data.hovered_serie_idx = Some(app.data.available_series.len() - 1);
             }
+
             _ => app.should_render = false,
         }
     }
