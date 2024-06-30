@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         should_render: true,
         should_exit: false,
         data: Data {
-            hovered_serie_idx: None,
+            hovered_serie_idx: Some(0),
             available_series: Vec::new(),
             ignore_cached_series: false,
             take: Some(24),
@@ -109,14 +109,14 @@ fn handle_keyboard_input(
             'r' | 'u' => app.data.ignore_cached_series = true,
             'k' => {
                 if let Some(idx) = app.data.hovered_serie_idx {
-                    app.data.hovered_serie_idx = Some(idx.saturating_sub(1).min(0));
+                    app.data.hovered_serie_idx = Some(idx.saturating_sub(1).max(0));
                 }
             }
             'j' => {
-                let max_series = app.data.available_series.len();
+                let max_series = app.data.available_series.len() - 1;
 
                 if let Some(idx) = app.data.hovered_serie_idx {
-                    app.data.hovered_serie_idx = Some(idx.saturating_add(1).max(max_series));
+                    app.data.hovered_serie_idx = Some(idx.saturating_add(1).min(max_series));
                 }
             }
             _ => app.should_render = false,
