@@ -119,6 +119,9 @@ fn handle_keyboard_input(
                     app.data.hovered_serie_idx = Some(idx.saturating_add(1).min(max_series));
                 }
             }
+            'G' => {
+                app.data.hovered_serie_idx = Some(app.data.available_series.len() - 1);
+            }
             _ => app.should_render = false,
         }
     }
