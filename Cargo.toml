@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rusqlite = { version = "0.31.0", features = ["bundled"] }
-crossterm = { version = "0.27.0", features = ["event-stream"] }
+rusqlite = { version = "0.32.1", features = ["bundled"] }
+uuid = { version = "1.10.0", features = ["v4"] }
+termsize = { version = "0.1.9" }

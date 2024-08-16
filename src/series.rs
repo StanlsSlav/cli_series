@@ -1,12 +1,6 @@
-use std::io::stdout;
-
-use crossterm::{
-    execute,
-    style::{Attribute, Color, Print, ResetColor, SetAttribute, SetForegroundColor},
-};
 use rusqlite::{Connection, Error};
 
-use crate::db::DbContext;
+use crate::db::get_connection;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Series {
@@ -31,7 +25,7 @@ impl Series {
         let total_episodes = total_episodes.unwrap_or(0);
         let is_airing_finished = is_airing_finished.unwrap_or(false);
 
-        assert!(guid.len() == 36, "GUID must be 36 characters long");
+        assert_eq!(guid.len(), 36, "GUID must be 36 characters long");
         assert!(!name.is_empty(), "Name must not be empty");
         assert!(
             current_episode >= 0,
@@ -58,13 +52,13 @@ impl Series {
     pub(crate) fn get(
         take: Option<usize>,
         skip: Option<usize>,
-    ) -> Result<Vec<Self>, rusqlite::Error> {
-        let ctx = DbContext::new()?;
+    ) -> Result<Vec<Self>, Error> {
+        let ctx = get_connection()?;
         let mut series = Vec::new();
 
         let mut stmt = ctx.prepare(
             r"
-            SELECT guid, name, isfinished, isairingfinished, totalepisodes, currentepisode
+            SELECT guid, name, is_finished, is_airing_finished, total_episodes, current_episode
               FROM series
             ORDER BY name
              LIMIT ?
@@ -88,7 +82,12 @@ impl Series {
     }
 
     pub(crate) fn get_by_guid(guid: String, conn: &Connection) -> Result<Option<Self>, Error> {
-        let mut stmt = conn.prepare("SELECT guid, name, isfinished, isairingfinished, totalepisodes, currentepisode FROM series WHERE guid = ?")?;
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT guid, name, is_finished, is_airing_finished, total_episodes, current_episode
+            FROM series
+            WHERE guid = ?
+            "#)?;
         let mut rows = stmt.query([&guid])?;
 
         match rows.next()? {
@@ -105,7 +104,12 @@ impl Series {
     }
 
     pub(crate) fn try_insert(&mut self, conn: &Connection) -> Result<bool, Error> {
-        let mut stmt = conn.prepare("INSERT INTO series (guid, name, isfinished, isairingfinished, totalepisodes, currentepisode) VALUES (?, ?, ?, ?, ?, ?)")?;
+        let mut stmt = conn.prepare(
+            r#"
+                INSERT INTO series (guid, name, isfinished, isairingfinished, totalepisodes, currentepisode)
+                VALUES (?, ?, ?, ?, ?, ?)
+                "#)?;
+
         stmt.execute([
             &self.guid,
             &self.name,
@@ -119,7 +123,12 @@ impl Series {
     }
 
     pub(crate) fn try_update(&mut self, conn: &Connection) -> Result<bool, Error> {
-        let mut stmt = conn.prepare("UPDATE series SET name = ?, isfinished = ?, isairingfinished = ?, totalepisodes = ?, currentepisode = ? WHERE guid = ?")?;
+        let mut stmt = conn.prepare(
+            r#"
+            UPDATE series
+            SET name = ?, isfinished = ?, isairingfinished = ?, totalepisodes = ?, currentepisode = ?
+            WHERE guid = ?
+            "#)?;
         stmt.execute([
             &self.name,
             &self.is_finished.to_string(),

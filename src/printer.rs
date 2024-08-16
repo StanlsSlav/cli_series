@@ -1,48 +1,28 @@
-use std::{error::Error, io::stdout};
+use crate::series::Series;
+use crate::term::{attribute, color::Color};
 
-use crossterm::{
-    execute,
-    style::{Attribute, Color, Print, ResetColor, SetAttribute, SetForegroundColor},
-    ExecutableCommand,
-};
+pub(crate) fn print_series_table(printable_series: &[Series], selected_idx: Option<usize>) {
+    print_header();
+    print_separator("-", true);
 
-use crate::{series::Series, term::get_size};
-
-struct Paddings {
-    name_cell: usize,
-}
-
-pub(crate) fn print_series_table(
-    series: &Vec<Series>,
-    selected_idx: Option<usize>,
-) -> Result<(), Box<dyn Error>> {
-    print_header()?;
-    print_separator(None, None)?;
-
-    let series = series.iter();
-    for (i, serie) in series.enumerate() {
+    let series = printable_series.iter();
+    for (i, series) in series.enumerate() {
         let is_selected = i == selected_idx.unwrap_or(0);
 
-        print_row(serie, is_selected)?;
+        print_row(series, i as i32, is_selected);
         println!();
     }
-
-    Ok(())
 }
 
-fn print_header() -> Result<(), Box<dyn Error>> {
-    execute!(
-        stdout(),
-        Print("Guid | Name | Finished | Airing Finished | Total Episodes | Current Episode\n"),
-    )?;
-
-    Ok(())
+fn print_header() {
+    println!("Id | Guid | Name | Finished | Airing Finished | Total Episodes | Current Episode");
 }
 
-fn print_separator(sep: Option<&str>, do_repeat: Option<bool>) -> Result<(), Box<dyn Error>> {
-    let (width, _) = get_size()?;
-    let sep = sep.unwrap_or("-");
-    let do_repeat = do_repeat.unwrap_or(true);
+fn print_separator(sep: &str, do_repeat: bool) {
+    let (width, _) = match termsize::get() {
+        Some(sizes) => (sizes.cols, sizes.rows),
+        None => (0, 0),
+    };
 
     let sep = if do_repeat {
         &sep.repeat(width as usize - sep.len() + 1).to_string()
@@ -51,54 +31,48 @@ fn print_separator(sep: Option<&str>, do_repeat: Option<bool>) -> Result<(), Box
     };
 
     print!("{}", sep);
-
-    Ok(())
 }
 
-fn print_row(serie: &Series, is_selected: bool) -> Result<(), Box<dyn Error>> {
+fn print_row(series: &Series, idx: i32, is_selected: bool) {
+    let invert = attribute::invert();
     let attribute = match is_selected {
-        true => Some(Attribute::Reverse),
+        true => Some(invert.as_str()),
         false => None,
     };
 
+    print_cell(idx + 1, None, None);
+    print_separator(" | ", false);
+
     print_cell(
-        serie.guid[..4].to_owned() + "...",
-        Some(Color::Grey),
+        series.guid[..4].to_owned() + "...",
+        Some(Color::Rgb(190, 190, 190)),
         attribute,
-    )?;
-    print_separator(Some(" | "), Some(false))?;
+    );
+    print_separator(" | ", false);
 
-    print_cell(&serie.name, Some(Color::Green), attribute)?;
-    print_separator(Some(" | "), Some(false))?;
+    print_cell(&series.name, Some(Color::Green), attribute);
+    print_separator(" | ", false);
 
-    print_cell(serie.is_finished, Some(Color::Red), attribute)?;
-    print_separator(Some(" | "), Some(false))?;
+    print_cell(series.is_finished, Some(Color::Red), attribute);
+    print_separator(" | ", false);
 
-    print_cell(serie.is_airing_finished, Some(Color::Blue), attribute)?;
-    print_separator(Some(" | "), Some(false))?;
+    print_cell(series.is_airing_finished, Some(Color::Blue), attribute);
+    print_separator(" | ", false);
 
-    print_cell(serie.total_episodes, Some(Color::Green), attribute)?;
-    print_separator(Some(" | "), Some(false))?;
+    print_cell(series.total_episodes, Some(Color::Green), attribute);
+    print_separator(" | ", false);
 
-    print_cell(serie.current_episode, Some(Color::Green), attribute)?;
-
-    Ok(())
+    print_cell(series.current_episode, Some(Color::Green), attribute);
 }
 
-fn print_cell<T: ToString>(
-    cell: T,
-    color: Option<Color>,
-    attribute: Option<Attribute>,
-) -> Result<(), Box<dyn Error>> {
-    let mut out = stdout();
-    out.execute(SetForegroundColor(color.unwrap_or(Color::White)))?;
+fn print_cell<T: ToString>(cell: T, color: Option<Color>, style: Option<&str>) {
+    if let Some(color) = color {
+        print!("{}", color);
+    }
 
-    if let Some(attr) = attribute {
-        out.execute(SetAttribute(attr))?;
+    if let Some(style) = style {
+        print!("{}", style);
     };
 
-    out.execute(Print(cell.to_string()))?;
-    out.execute(ResetColor)?;
-
-    Ok(())
+    print!("{}{}", cell.to_string(), attribute::reset());
 }

@@ -1,9 +1,7 @@
-use rusqlite::Connection;
+use rusqlite::{Connection, Error};
 
-pub(crate) struct DbContext {}
+const DB_PATH: &str = "data.db";
 
-impl DbContext {
-    pub(crate) fn new() -> rusqlite::Result<Connection> {
-        Connection::open("data.db")
-    }
+pub(crate) fn get_connection() -> Result<Connection, Error> {
+    Connection::open(DB_PATH)
 }
