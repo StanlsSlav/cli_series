@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-pub(crate) fn get_input() -> String {
+pub(crate) fn get() -> String {
     let mut input: String = String::new();
 
     print!("|> ");

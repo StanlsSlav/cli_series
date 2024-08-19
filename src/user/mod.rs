@@ -1,3 +1,7 @@
 pub(crate) mod create_series;
-mod input_types;
 
+pub(crate) enum InputType {
+    Number,
+    String,
+    Boolean,
+}

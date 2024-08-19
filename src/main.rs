@@ -1,7 +1,10 @@
 use crate::term::{attribute, color};
 use app::{App, Data};
 use color::Color;
-use mode::Mode;
+use keybinds::{
+    nav::{move_down, move_max, move_min, move_to, move_up, start_inserting},
+    parse_input, Mode,
+};
 use printer::print_series_table;
 use series::Series;
 use std::sync::Arc;
@@ -10,8 +13,8 @@ use user::create_series::create_key_handler;
 
 mod app;
 mod db;
-mod input_handler;
-mod mode;
+mod input;
+mod keybinds;
 mod printer;
 mod series;
 mod term;
@@ -105,41 +108,28 @@ fn handle_input(app: &mut App) {
 fn main_key_handler(app: &mut App) {
     app.should_render = true;
 
-    let binding = input_handler::get_input();
-    let input = binding.trim();
+    let user_input = input::get();
+    let input = parse_input(user_input.trim());
 
-    app.should_exit = input == "q";
-    app.should_show_help = input == "h" && !app.should_show_help;
-    app.should_show_help_msg = input == "m" && !app.should_show_help_msg;
-    app.data.ignore_cached_series = input == "r";
+    let raw_input = input.raw_input.clone().unwrap();
+    let raw_input = raw_input.as_str();
 
-    let found_digits_prefix: Vec<usize> = input
-        .matches("^\\d+")
-        .collect::<Vec<&str>>()
-        .into_iter()
-        .map(|x| x.parse::<usize>().unwrap_or(1))
-        .collect();
+    app.should_exit = raw_input == "q";
+    app.should_show_help = raw_input == "h" && !app.should_show_help;
+    app.should_show_help_msg = raw_input == "m" && !app.should_show_help_msg;
+    app.data.ignore_cached_series = raw_input == "r";
 
-    let digits_prefix = found_digits_prefix.first().unwrap_or(&1);
-
-    if input == "i" {
-        app.keyboard_handler = Arc::new(create_key_handler);
-        let _ = user::create_series::begin(app);
-    } else if input.ends_with("k") {
-        if let Some(idx) = app.data.hovered_series_idx {
-            app.data.hovered_series_idx = Some(idx.saturating_sub(*digits_prefix).max(0));
-        }
-    } else if input.ends_with("j") {
-        let max_series = app.data.available_series.len() - 1;
-
-        if let Some(idx) = app.data.hovered_series_idx {
-            app.data.hovered_series_idx = Some(idx.saturating_add(*digits_prefix).min(max_series));
-        }
-    } else if input == "G" {
-        app.data.hovered_series_idx = Some(app.data.available_series.len() - 1);
-    } else if input != "0" && input.chars().all(|x| x.is_ascii_digit()) {
-        let max_series = app.data.available_series.len() - 1;
-        let idx = input.parse::<usize>().unwrap_or(0) - 1;
-        app.data.hovered_series_idx = Some(idx.clamp(0, max_series));
+    if raw_input == "i" {
+        start_inserting(app);
+    } else if raw_input.ends_with("k") {
+        move_up(app, &input);
+    } else if raw_input.ends_with("j") {
+        move_down(app, &input);
+    } else if raw_input == "G" {
+        move_max(app);
+    } else if raw_input == "gg" {
+        move_min(app);
+    } else if raw_input != "0" && raw_input.chars().all(|x| x.is_ascii_digit()) {
+        move_to(app, &input);
     }
 }

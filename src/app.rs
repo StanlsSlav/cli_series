@@ -1,6 +1,6 @@
 use termsize::Size;
 
-use crate::{mode::Mode, series::Series};
+use crate::{Mode, series::Series};
 use std::sync::Arc;
 
 pub(crate) struct App {

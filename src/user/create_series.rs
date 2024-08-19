@@ -1,8 +1,8 @@
 use uuid::Uuid;
 
-use crate::{app::App, input_handler, mode::Mode, term::clear_screen};
+use crate::{app::App, input, keybinds::{nav::{move_down, move_max, move_min, move_to, move_up}, parse_input}, term::clear_screen, Mode};
 
-use super::input_types::InputType;
+use super::InputType;
 use std::{
     io::{self},
     option::Option,
@@ -83,12 +83,28 @@ pub(crate) fn render(inputs: &[CreateInput]) {
     }
 }
 
-pub(crate) fn create_key_handler(_app: &mut App) {
-    let input: String = input_handler::get_input();
+pub(crate) fn create_key_handler(app: &mut App) {
+    let user_input = input::get();
+    let input = parse_input(user_input.trim());
 
-    match input.as_str() {
-        "n" => _app.mode = Mode::Navigation,
-        "e" => _app.mode = Mode::Edit,
+    let raw_input = input.raw_input.clone().unwrap();
+    let raw_input = raw_input.as_str();
+
+    if raw_input.ends_with("k") {
+        move_up(app, &input);
+    } else if raw_input.ends_with("j") {
+        move_down(app, &input);
+    } else if raw_input == "G" {
+        move_max(app);
+    } else if raw_input == "gg" {
+        move_min(app);
+    } else if raw_input != "0" && raw_input.chars().all(|x| x.is_ascii_digit()) {
+        move_to(app, &input);
+    }
+
+    match raw_input {
+        "n" => app.mode = Mode::Navigation,
+        "e" => app.mode = Mode::Edit,
         _ => {}
     }
 }
