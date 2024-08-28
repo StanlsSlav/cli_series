@@ -27,7 +27,31 @@ pub(crate) struct Data {
     pub(crate) available_series: Vec<Series>,
     pub(crate) ignore_cached_series: bool,
 
+    take_backup: usize,
     pub(crate) take: usize,
     pub(crate) skip: usize,
     pub(crate) total_series: usize,
+}
+
+impl Data {
+    pub(crate) fn default(total_series: usize) -> Self {
+        Self {
+            hovered_series_idx: 0,
+            available_series: vec![],
+            ignore_cached_series: true,
+            take_backup: 16,
+            take: 16,
+            skip: 0,
+            total_series,
+        }
+    }
+
+    pub(crate) fn set_take(&mut self, take: usize) {
+        self.take_backup = self.take;
+        self.take = take;
+    }
+
+    pub(crate) fn restore_take(&mut self) {
+        self.take = self.take_backup;
+    }
 }

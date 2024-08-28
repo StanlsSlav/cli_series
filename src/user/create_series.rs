@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use crate::{
     app::App,
     input,
@@ -30,8 +28,14 @@ pub(crate) fn create_render(app: &mut App) {
 
 pub(crate) fn create_key_handler(app: &mut App) {
     let user_input = input::get();
-    let input = parse_input(user_input.trim());
 
+    if app.mode == Mode::Edit {
+        app.create_data[app.data.hovered_series_idx].raw_value = user_input;
+        app.mode = Mode::Navigation;
+        return;
+    }
+
+    let input = parse_input(user_input.trim());
     let binding = input.actions.iter().collect::<String>();
     let binding = binding.as_str();
 
@@ -44,22 +48,12 @@ pub(crate) fn create_key_handler(app: &mut App) {
         "G" => move_max(app),
         "gg" => move_min(app),
 
-        _ => {}
-    }
-
-    if app.mode == Mode::Edit {
-        app.create_data[app.data.hovered_series_idx].raw_value = input.raw_input.unwrap();
-        app.mode = Mode::Navigation;
-        return;
-    }
-
-    match binding {
-        "q" => start_listing(app),
         "" => {
             if input.digits_prefix.is_some() {
                 move_to(app, &input);
             }
         }
+
         "e" => app.mode = Mode::Edit,
         "i" => {
             let form = &app.create_data;

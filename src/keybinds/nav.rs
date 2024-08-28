@@ -12,15 +12,14 @@ use crate::{
 };
 
 pub fn move_down(app: &mut App, input: &UserInput) {
-    let max_series = app.data.available_series.len() - 1;
-
     let digits_prefix = input.digits_prefix.unwrap_or(1);
+    let max = app.data.take.saturating_sub(1);
 
     app.data.hovered_series_idx = app
         .data
         .hovered_series_idx
         .saturating_add(digits_prefix)
-        .min(max_series);
+        .min(max);
 }
 
 pub(crate) fn move_up(app: &mut App, input: &UserInput) {
@@ -38,12 +37,13 @@ pub(crate) fn move_min(app: &mut App) {
 }
 
 pub(crate) fn move_max(app: &mut App) {
-    app.data.hovered_series_idx = app.data.available_series.len() - 1;
+    app.data.hovered_series_idx = app.data.take.saturating_sub(1);
 }
 
 pub(crate) fn move_to(app: &mut App, input: &UserInput) {
-    let max_series = app.data.available_series.len() - 1;
-    app.data.hovered_series_idx = input.digits_prefix.unwrap_or(1).clamp(0, max_series);
+    let max = app.data.take;
+    let selected = input.digits_prefix.unwrap_or(0);
+    app.data.hovered_series_idx = selected.clamp(0, max).saturating_sub(1);
 }
 
 pub(crate) fn scroll_up(app: &mut App, input: &UserInput) {
@@ -62,6 +62,7 @@ pub(crate) fn scroll_down(app: &mut App, input: &UserInput) {
     if window_size > app.data.total_series {
         return;
     }
+
     scroll(app, offset.try_into().unwrap());
 }
 
@@ -74,6 +75,7 @@ fn scroll(app: &mut App, qty: i32) {
 pub(crate) fn start_listing(app: &mut App) {
     app.keyboard_handler = Arc::new(main_key_handler);
     app.renderer = Arc::new(main_render);
+    app.data.restore_take();
 
     move_min(app);
 }
@@ -89,6 +91,7 @@ pub(crate) fn start_inserting(app: &mut App) {
         CreateInput::new("Current Episode", InputType::Number),
         CreateInput::new("Total Episodes", InputType::Number),
     ];
+    app.data.set_take(app.create_data.len());
 
     move_min(app);
 }

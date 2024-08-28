@@ -32,14 +32,7 @@ fn main() {
         term_size: termsize::get().unwrap(),
         mode: Mode::Navigation,
         toast: None,
-        data: Data {
-            hovered_series_idx: 0,
-            available_series: Vec::new(),
-            ignore_cached_series: false,
-            take: 16,
-            skip: 0,
-            total_series: Series::count_total().unwrap_or(0),
-        },
+        data: Data::default(Series::count_total().unwrap_or(0)),
         create_data: vec![],
     };
 
