@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 uuid = { version = "1.10.0", features = ["v4"] }
-termsize = { version = "0.1.9" }
+termsize = "0.1.9"
+regex = "1.10.6"

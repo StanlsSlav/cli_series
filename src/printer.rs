@@ -1,13 +1,13 @@
 use crate::series::Series;
 use crate::term::{attribute, color::Color};
 
-pub(crate) fn print_series_table(printable_series: &[Series], selected_idx: Option<usize>) {
+pub(crate) fn print_series_table(printable_series: &[Series], selected_idx: usize) {
     print_header();
     print_separator("-", true);
 
     let series = printable_series.iter();
     for (i, series) in series.enumerate() {
-        let is_selected = i == selected_idx.unwrap_or(0);
+        let is_selected = i == selected_idx;
 
         print_row(series, i as i32, is_selected);
         println!();

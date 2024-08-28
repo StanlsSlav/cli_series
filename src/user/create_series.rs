@@ -1,85 +1,30 @@
-use uuid::Uuid;
+use std::error::Error;
 
-use crate::{app::App, input, keybinds::{nav::{move_down, move_max, move_min, move_to, move_up}, parse_input}, term::clear_screen, Mode};
-
-use super::InputType;
-use std::{
-    io::{self},
-    option::Option,
+use crate::{
+    app::App,
+    input,
+    keybinds::{
+        nav::{move_down, move_max, move_min, move_to, move_up, start_listing},
+        parse_input,
+    },
+    series::Series,
+    term::attribute,
+    Mode,
 };
 
-#[derive(Clone)]
-enum DefaultValue {
-    Text(String),
-    Get(fn() -> String),
-}
+pub(crate) fn create_render(app: &mut App) {
+    for (i, input) in app.create_data.iter().enumerate() {
+        let label = input.label.clone();
 
-impl DefaultValue {
-    fn get(&self) -> String {
-        match self {
-            DefaultValue::Text(text) => text.clone(),
-            DefaultValue::Get(get) => get(),
-        }
-    }
-}
-
-pub(crate) struct CreateInput {
-    pub(crate) label: String,
-    pub(crate) input_type: InputType,
-    pub(crate) value: Option<DefaultValue>,
-}
-
-impl CreateInput {
-    pub(crate) fn new(label: &str, input_type: InputType) -> Self {
-        let label = label.to_string();
-
-        Self {
-            label,
-            input_type,
-            value: None,
-        }
-    }
-}
-
-pub(crate) fn begin(app: &mut App) -> Result<(), io::Error> {
-    let inputs = vec![
-        CreateInput {
-            label: "Guid".to_string(),
-            input_type: InputType::String,
-            value: Some(DefaultValue::Get(|| Uuid::new_v4().to_string())),
-        },
-        CreateInput::new("Name", InputType::String),
-        CreateInput::new("Finished?", InputType::Boolean),
-        CreateInput::new("Airing Finished?", InputType::Boolean),
-        CreateInput::new("Current Episode", InputType::Number),
-        CreateInput::new("Total Episodes", InputType::Number),
-    ];
-
-    loop {
-        if app.should_exit {
-            break;
+        if i == app.data.hovered_series_idx {
+            print!("{}", attribute::invert());
         }
 
-        if app.should_render {
-            render(&inputs);
-            app.should_render = false;
+        if app.mode == Mode::Edit && i != app.data.hovered_series_idx {
+            continue;
         }
-    }
 
-    Ok(())
-}
-
-pub(crate) fn render(inputs: &[CreateInput]) {
-    clear_screen();
-
-    let mut form_inputs: Vec<(String, String)> = vec![];
-    for input in inputs {
-        let value = match &input.value {
-            Some(default_value) => default_value.get(),
-            None => "".to_string(),
-        };
-
-        form_inputs.push((input.label.clone(), value));
+        println!("{}{}: {:?}", label, attribute::reset(), input.raw_value);
     }
 }
 
@@ -87,24 +32,50 @@ pub(crate) fn create_key_handler(app: &mut App) {
     let user_input = input::get();
     let input = parse_input(user_input.trim());
 
-    let raw_input = input.raw_input.clone().unwrap();
-    let raw_input = raw_input.as_str();
+    let binding = input.actions.iter().collect::<String>();
+    let binding = binding.as_str();
 
-    if raw_input.ends_with("k") {
-        move_up(app, &input);
-    } else if raw_input.ends_with("j") {
-        move_down(app, &input);
-    } else if raw_input == "G" {
-        move_max(app);
-    } else if raw_input == "gg" {
-        move_min(app);
-    } else if raw_input != "0" && raw_input.chars().all(|x| x.is_ascii_digit()) {
-        move_to(app, &input);
+    match binding {
+        "q" => start_listing(app),
+
+        "k" => move_up(app, &input),
+        "j" => move_down(app, &input),
+
+        "G" => move_max(app),
+        "gg" => move_min(app),
+
+        _ => {}
     }
 
-    match raw_input {
-        "n" => app.mode = Mode::Navigation,
+    if app.mode == Mode::Edit {
+        app.create_data[app.data.hovered_series_idx].raw_value = input.raw_input.unwrap();
+        app.mode = Mode::Navigation;
+        return;
+    }
+
+    match binding {
+        "q" => start_listing(app),
+        "" => {
+            if input.digits_prefix.is_some() {
+                move_to(app, &input);
+            }
+        }
         "e" => app.mode = Mode::Edit,
+        "i" => {
+            let form = &app.create_data;
+            let mut series = Series::new(
+                form[0].raw_value.clone(),
+                form[1].get_bool(),
+                form[2].get_bool(),
+                form[3].get_i32(),
+                form[4].get_i32(),
+            );
+
+            match series.try_insert() {
+                Ok(_) => app.toast = Some("Series created!".to_string()),
+                Err(er) => app.toast = Some(er.to_string()),
+            }
+        }
         _ => {}
     }
 }
