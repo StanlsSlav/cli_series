@@ -1,6 +1,4 @@
-use termsize::Size;
-
-use crate::{series::Series, user::create_input::CreateInput, Mode};
+use crate::{series::Series, term::Size, user::create_input::CreateInput, Mode};
 use std::sync::Arc;
 
 pub(crate) struct App {

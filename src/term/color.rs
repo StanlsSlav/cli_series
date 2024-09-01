@@ -16,8 +16,8 @@ impl Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{CSI}{FOREGROUND};{Color}m",
-            Color = match self {
+            "{CSI}{FOREGROUND};{}m",
+            match self {
                 Color::Rgb(r, g, b) => format!("{};{};{}", r, g, b),
                 Color::Red => "255;0;0".to_string(),
                 Color::Green => "0;255;0".to_string(),

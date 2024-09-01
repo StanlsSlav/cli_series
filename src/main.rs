@@ -29,7 +29,7 @@ fn main() {
         should_show_help_msg: true,
         keyboard_handler: Arc::new(main_key_handler),
         renderer: Arc::new(main_render),
-        term_size: termsize::get().unwrap(),
+        term_size: term::get_size().unwrap(),
         mode: Mode::Navigation,
         toast: None,
         data: Data::default(Series::count_total().unwrap_or(0)),
@@ -37,7 +37,7 @@ fn main() {
     };
 
     while !app.should_exit {
-        let sizes = termsize::get().unwrap();
+        let sizes = term::get_size().unwrap();
         let has_term_resized = app.term_size.cols != sizes.cols || app.term_size.rows != sizes.rows;
 
         if app.should_render || !has_term_resized {

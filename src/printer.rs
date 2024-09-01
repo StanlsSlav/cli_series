@@ -1,4 +1,5 @@
 use crate::series::Series;
+use crate::term;
 use crate::term::{attribute, color::Color};
 
 pub(crate) fn print_series_table(printable_series: &[Series], selected_idx: usize) {
@@ -19,7 +20,7 @@ fn print_header() {
 }
 
 fn print_separator(sep: &str, do_repeat: bool) {
-    let (width, _) = match termsize::get() {
+    let (width, _) = match term::get_size() {
         Some(sizes) => (sizes.cols, sizes.rows),
         None => (0, 0),
     };
